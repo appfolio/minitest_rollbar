@@ -1,13 +1,13 @@
-require 'minitest'
 require 'rollbar'
+require 'minitest/reporters'
 
 module MinitestRollbar
   class << self
     attr_accessor :access_token
   end
 
-  class RollbarReporter < Minitest::StatisticsReporter
-    def initialize(io = $stdout, options = {})
+  class RollbarReporter < Minitest::Reporters::BaseReporter
+    def initialize(options = {})
       super
       @sequential_exception_count = 0
       # Inspect will return ExceptionType + Message.
