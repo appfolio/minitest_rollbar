@@ -14,5 +14,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rake', '~> 10.0'
 
   spec.add_runtime_dependency 'rollbar', '~> 2.0'
-  spec.add_runtime_dependency 'minitest-reporters', '~> 1.0'
+  spec.add_runtime_dependency 'minitest-reporters', '~> 1.1'
 end
