@@ -4,6 +4,7 @@ require 'minitest/reporters'
 module MinitestRollbar
   class << self
     attr_accessor :access_token
+    attr_accessor :use_default_grouping
   end
 
   class RollbarReporter < Minitest::Reporters::BaseReporter
@@ -12,7 +13,7 @@ module MinitestRollbar
       @sequential_exception_count = 0
       # Inspect will return ExceptionType + Message.
       # E.g #<Selenium::WebDriver::Error::NoSuchWindowError: Window not found. The browser window may have been closed.>
-      # Use this as a criteria of grouping
+      # Use this as a criteria for log batch grouping
       @previous_exception_inspect_result = nil
       @previous_exception = nil
 
@@ -28,22 +29,17 @@ module MinitestRollbar
         current_exception = result.failure.exception
         current_exception_inspect_result = current_exception.inspect
 
-        # If there is no previous exception, start a fresh counter
         if @previous_exception_inspect_result.nil?
           record_new_error(current_exception)
-          # Report or increment the count the previous errors if a new error occurs
         elsif current_exception_inspect_result == @previous_exception_inspect_result
-          # Same error, increment counter
           increment_error_counting
-        else
-          # Different error, report previous errors and record new error
-          report_error_to_rollbar
+        else # New exception
+          report_error_to_rollbar notifier
           record_new_error current_exception
         end
       else
-        # Report previous errors if there is any
         unless @previous_exception.nil?
-          report_error_to_rollbar
+          report_error_to_rollbar notifier
           reset_error_counting
         end
       end
@@ -52,20 +48,20 @@ module MinitestRollbar
     def report
       super
       if @sequential_exception_count > 0
-        notifier = Rollbar.scope(count: @sequential_exception_count)
-        notifier.error(@previous_exception)
-
-        @previous_exception_inspect_result = nil
-        @previous_exception = nil
-        @sequential_exception_count = 0
-
+        report_error_to_rollbar notifier
+        reset_error_counting
       end
     end
 
     private
 
-    def report_error_to_rollbar
-      notifier = Rollbar.scope(count: @sequential_exception_count)
+    def notifier
+      MinitestRollbar.use_default_grouping.nil? ?
+          Rollbar.scope({count: @sequential_exception_count,  fingerprint: @previous_exception_inspect_result}):
+          Rollbar.scope({count: @sequential_exception_count})
+    end
+
+    def report_error_to_rollbar(notifier)
       notifier.error(@previous_exception)
     end
 

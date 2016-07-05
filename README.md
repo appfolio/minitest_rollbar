@@ -30,6 +30,11 @@ Set up authentication token by:
 
     MinitestRollbar.access_token = {YOUR_TOKEN}
 
+By default we try to group occurrence by string returned by exception.inspect (Concatenate exception class name and message). We generate a fingerprint for that. To use rollbar's [default](https://rollbar.com/docs/grouping-algorithm/) default grouping algorithm, do
+
+    MinitestRollbar.use_default_grouping = true
+
+
 ## License
 
 This gem is available under the Simplified BSD License.
