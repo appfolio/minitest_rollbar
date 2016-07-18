@@ -20,6 +20,7 @@ module MinitestRollbar
       raise 'Must set rollbar access token' if MinitestRollbar.access_token.nil?
       Rollbar.configure do |config|
         config.access_token = MinitestRollbar.access_token
+        config.verify_ssl_peer = false
       end
     end
 
