@@ -1,10 +1,10 @@
 require 'rollbar'
 require 'minitest/reporters'
-
 module MinitestRollbar
   class << self
     attr_accessor :access_token
     attr_accessor :use_default_grouping
+    attr_accessor :enable_verify_ssl_peer
   end
 
   class RollbarReporter < Minitest::Reporters::BaseReporter
@@ -21,6 +21,11 @@ module MinitestRollbar
       Rollbar.configure do |config|
         config.access_token = MinitestRollbar.access_token
         config.verify_ssl_peer = false
+
+        unless MinitestRollbar.enable_verify_ssl_peer.nil?
+          config.verify_ssl_peer = MinitestRollbar.enable_verify_ssl_peer
+        end
+
       end
     end
 
@@ -57,9 +62,11 @@ module MinitestRollbar
     private
 
     def notifier
-      MinitestRollbar.use_default_grouping.nil? ?
-          Rollbar.scope({count: @sequential_exception_count,  fingerprint: @previous_exception_inspect_result}):
+        if(MinitestRollbar.use_default_grouping.nil?)
+          Rollbar.scope({count: @sequential_exception_count,  fingerprint: @previous_exception_inspect_result})
+        else
           Rollbar.scope({count: @sequential_exception_count})
+        end
     end
 
     def report_error_to_rollbar(notifier)
