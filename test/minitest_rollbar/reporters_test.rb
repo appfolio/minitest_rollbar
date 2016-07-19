@@ -1,93 +1,68 @@
 require_relative '../test_helper'
 class ReportersTest < Minitest::Test
   def setup
-    MinitestRollbar.access_token = 'whatever'
-    @reporter =  MinitestRollbar::RollbarReporter.new
+    @reporter = MinitestRollbar::RollbarReporter.new(rollbar_config: {verify_ssl_peer: false, access_token: 'whatever'})
+    setup_results
   end
 
   def test_record__with_two_same_errors_and_one_pass
-    mock_notifier = Minitest::Mock.new
-    mock_notifier.expect(:error, nil, ['some exception'])
-    error_result = ResultStub.new
-    pass_result = ResultStub.new
+    mock_notifier = mock
+    Rollbar.stubs(:scope).returns(mock_notifier)
 
-    class << pass_result
-      def error?
-        false
-      end
-    end
+    mock_notifier.expects(:error).with('some exception').once
 
-    # Make Rollbar.scope return mocked notifier so we can monitor it's reporting event
-    Rollbar.stub(:scope, mock_notifier) do
-      @reporter.record(error_result)
-      @reporter.record(error_result)
-      @reporter.record(pass_result)
-      mock_notifier.verify
-    end
+    @reporter.record(@one_result)
+    @reporter.record(@one_result)
+    @reporter.record(@pass_result)
+
   end
 
   def test_record__with_one_error_one_other_error_and_one_pass
-    mock_notifier = Minitest::Mock.new
-    mock_notifier.expect(:error, nil, ['some exception'])
-    mock_notifier.expect(:error, nil, ['other exception'])
+    mock_notifier = mock
+    Rollbar.stubs(:scope).returns(mock_notifier)
+    mock_notifier.expects(:error).with('some exception').once
+    mock_notifier.expects(:error).with('other exception').once
 
-    error_result = ResultStub.new
-    other_error_result = ResultStub.new
-    pass_result = ResultStub.new
+    @reporter.record(@one_result)
+    @reporter.record(@two_result)
+    @reporter.record(@pass_result)
 
-    class << pass_result
-      def error?
-        false
-      end
-    end
-
-    class << other_error_result
-      def failure
-        o = Object.new
-        class << o
-          def exception
-            'other exception'
-          end
-        end
-        o
-      end
-    end
-
-    Rollbar.stub(:scope, mock_notifier) do
-      @reporter.record(error_result)
-      @reporter.record(other_error_result)
-      @reporter.record(pass_result)
-      mock_notifier.verify
-    end
   end
 
 
 
-  class ResultStub
-    def error?
-      true
-    end
+  private
 
-    def failure
-      o = Object.new
-      class << o
-        def exception
-          'some exception'
-        end
-      end
-      o
-    end
+  def setup_results
+    # Passed result
+    @pass_result = mock
 
-    def assertions
-      0
-    end
+    @pass_result.stubs(:error?).returns(false)
+    @pass_result.stubs(:skipped?).returns(false)
+    @pass_result.stubs(:passed?).returns(true)
+    @pass_result.stubs(:assertions).returns(0)
 
-    def passed?
-      false
-    end
+    @one_result = mock
+    @one_result_failure = mock
 
-    def skipped?
-      false
-    end
+    # Failure result 1
+    @one_result.stubs(:error?).returns(true)
+    @one_result.stubs(:skipped?).returns(false)
+    @one_result.stubs(:passed?).returns(false)
+    @one_result.stubs(:assertions).returns(0)
+    @one_result.stubs(:failure).returns(@one_result_failure)
+    @one_result_failure.stubs(:exception).returns('some exception')
+
+    # Failure result 2
+    @two_result = mock
+    @two_result_failure = mock
+
+    @two_result.stubs(:error?).returns(true)
+    @two_result.stubs(:skipped?).returns(false)
+    @two_result.stubs(:passed?).returns(false)
+    @two_result.stubs(:assertions).returns(0)
+    @two_result.stubs(:failure).returns(@two_result_failure)
+    @two_result_failure.stubs(:exception).returns('other exception')
   end
+
 end

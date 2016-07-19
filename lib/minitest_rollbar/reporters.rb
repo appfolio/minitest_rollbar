@@ -2,14 +2,14 @@ require 'rollbar'
 require 'minitest/reporters'
 module MinitestRollbar
   class << self
-    attr_accessor :access_token
     attr_accessor :use_default_grouping
-    attr_accessor :enable_verify_ssl_peer
   end
 
   class RollbarReporter < Minitest::Reporters::BaseReporter
     def initialize(options = {})
-      super
+      rollbar_config = options.delete(:rollbar_config) || {}
+      super(options)
+
       @sequential_exception_count = 0
       # Inspect will return ExceptionType + Message.
       # E.g #<Selenium::WebDriver::Error::NoSuchWindowError: Window not found. The browser window may have been closed.>
@@ -17,16 +17,13 @@ module MinitestRollbar
       @previous_exception_inspect_result = nil
       @previous_exception = nil
 
-      raise 'Must set rollbar access token' if MinitestRollbar.access_token.nil?
       Rollbar.configure do |config|
-        config.access_token = MinitestRollbar.access_token
-        config.verify_ssl_peer = false
-
-        unless MinitestRollbar.enable_verify_ssl_peer.nil?
-          config.verify_ssl_peer = MinitestRollbar.enable_verify_ssl_peer
+        rollbar_config.each do |key, value|
+          config.send "#{key}=", value
         end
-
       end
+
+      raise 'Must set rollbar access token' if Rollbar.configuration.access_token.nil?
     end
 
     def record(result)
