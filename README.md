@@ -28,7 +28,7 @@ Require necessary files on test_helper:
 
 Get a reporter with access_token and ssl policy using:
 
-   @reporter = MinitestRollbar::RollbarReporter.new(rollbar_config: {verify_ssl_peer: false, access_token: 'whatever'})
+    @reporter = MinitestRollbar::RollbarReporter.new(rollbar_config: {verify_ssl_peer: false, access_token: 'whatever'})
   
 By default we try to group occurrence by string returned by exception.inspect (Concatenate exception class name and message). We generate a fingerprint for that. To use rollbar's [default](https://rollbar.com/docs/grouping-algorithm/) default grouping algorithm, do
 

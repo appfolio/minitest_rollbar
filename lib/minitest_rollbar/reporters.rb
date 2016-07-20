@@ -59,7 +59,7 @@ module MinitestRollbar
     private
 
     def notifier
-        if(MinitestRollbar.use_default_grouping.nil?)
+        if MinitestRollbar.use_default_grouping.nil?
           Rollbar.scope({count: @sequential_exception_count,  fingerprint: @previous_exception_inspect_result})
         else
           Rollbar.scope({count: @sequential_exception_count})

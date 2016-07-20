@@ -1,4 +1,4 @@
-require_relative '../test_helper'
+require 'test_helper'
 class ReportersTest < Minitest::Test
   def setup
     @reporter = MinitestRollbar::RollbarReporter.new(rollbar_config: {verify_ssl_peer: false, access_token: 'whatever'})
@@ -14,7 +14,6 @@ class ReportersTest < Minitest::Test
     @reporter.record(@one_result)
     @reporter.record(@one_result)
     @reporter.record(@pass_result)
-
   end
 
   def test_record__with_one_error_one_other_error_and_one_pass
@@ -26,10 +25,7 @@ class ReportersTest < Minitest::Test
     @reporter.record(@one_result)
     @reporter.record(@two_result)
     @reporter.record(@pass_result)
-
   end
-
-
 
   private
 
