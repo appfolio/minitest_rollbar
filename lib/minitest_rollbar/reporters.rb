@@ -58,12 +58,20 @@ module MinitestRollbar
 
     private
 
+    def git_commit_hash
+      ENV['BUILD_VCS_NUMBER']
+    end
+
+    def build_config_name
+      ENV['TEAMCITY_BUILDCONF_NAME']
+    end
+
     def notifier
-        if MinitestRollbar.use_default_grouping.nil?
-          Rollbar.scope({count: @sequential_exception_count,  fingerprint: @previous_exception_inspect_result})
-        else
-          Rollbar.scope({count: @sequential_exception_count})
-        end
+      if MinitestRollbar.use_default_grouping.nil?
+        Rollbar.scope({count: @sequential_exception_count, commit_hash: git_commit_hash, build_config: build_config_name,  fingerprint: @previous_exception_inspect_result})
+      else
+        Rollbar.scope({count: @sequential_exception_count, commit_hash: git_commit_hash, build_config: build_config_name})
+      end
     end
 
     def report_error_to_rollbar(notifier)
