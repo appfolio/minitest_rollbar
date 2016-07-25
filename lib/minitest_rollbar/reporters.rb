@@ -1,29 +1,24 @@
 require 'rollbar'
 require 'minitest/reporters'
 module MinitestRollbar
-  class << self
-    attr_accessor :use_default_grouping
-  end
 
   class RollbarReporter < Minitest::Reporters::BaseReporter
+
+    attr_accessor :use_default_grouping
+
     def initialize(options = {})
-      rollbar_config = options.delete(:rollbar_config) || {}
+      @rollbar_config = options.delete(:rollbar_config) || {}
       super(options)
 
       @sequential_exception_count = 0
-      # Inspect will return ExceptionType + Message.
-      # E.g #<Selenium::WebDriver::Error::NoSuchWindowError: Window not found. The browser window may have been closed.>
-      # Use this as a criteria for log batch grouping
+      @use_default_grouping = false
       @previous_exception_inspect_result = nil
       @previous_exception = nil
 
-      Rollbar.configure do |config|
-        rollbar_config.each do |key, value|
-          config.send "#{key}=", value
-        end
-      end
+      # Rollbar global setting, notifier instance won't report if this is not set
+      Rollbar.configuration.enabled = true
 
-      raise 'Must set rollbar access token' if Rollbar.configuration.access_token.nil?
+      raise 'Must set rollbar access token' if @rollbar_config[:access_token].nil?
     end
 
     def record(result)
@@ -67,11 +62,15 @@ module MinitestRollbar
     end
 
     def notifier
-      if MinitestRollbar.use_default_grouping.nil?
-        Rollbar.scope({count: @sequential_exception_count, commit_hash: git_commit_hash, build_config: build_config_name,  fingerprint: @previous_exception_inspect_result})
+      if @use_default_grouping
+        @notifier = Rollbar.scope({count: @sequential_exception_count, commit_hash: git_commit_hash, build_config: build_config_name})
       else
-        Rollbar.scope({count: @sequential_exception_count, commit_hash: git_commit_hash, build_config: build_config_name})
+        @notifier = Rollbar.scope({count: @sequential_exception_count, commit_hash: git_commit_hash, build_config: build_config_name, fingerprint: @previous_exception_inspect_result})
       end
+      @rollbar_config.each do |key,value|
+        @notifier.configuration.send("#{key}=", value)
+      end
+      @notifier
     end
 
     def report_error_to_rollbar(notifier)
