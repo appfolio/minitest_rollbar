@@ -63,9 +63,9 @@ module MinitestRollbar
 
     def notifier
       if @use_default_grouping
-        @notifier = Rollbar.scope({count: @sequential_exception_count, commit_hash: git_commit_hash, build_config: build_config_name})
+        @notifier = Rollbar.scope({environment: 'PossibleInfraFlaky',count: @sequential_exception_count, commit_hash: git_commit_hash, build_config: build_config_name})
       else
-        @notifier = Rollbar.scope({count: @sequential_exception_count, commit_hash: git_commit_hash, build_config: build_config_name, fingerprint: @previous_exception_inspect_result})
+        @notifier = Rollbar.scope({environment: 'PossibleInfraFlaky',count: @sequential_exception_count, commit_hash: git_commit_hash, build_config: build_config_name, fingerprint: @previous_exception_inspect_result})
       end
       @rollbar_config.each do |key,value|
         @notifier.configuration.send("#{key}=", value)
