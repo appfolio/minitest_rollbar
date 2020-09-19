@@ -1,0 +1,50 @@
+# Note:
+#
+# Please keep rules alphabetized within their sections (Style, Metrics, etc)
+# Please keep sections alphabetized and separated from other sections
+
+require:
+  - rubocop-minitest
+
+AllCops:
+  Exclude:
+    - gemfiles/**/*
+
+Gemspec/RequiredRubyVersion:
+  Enabled: false
+
+Layout/FirstArrayElementIndentation:
+  EnforcedStyle: consistent
+
+Layout/FirstHashElementIndentation:
+  EnforcedStyle: consistent
+
+Metrics/AbcSize:
+  Enabled: false
+
+Metrics/CyclomaticComplexity:
+  Max: 16
+
+Metrics/MethodLength:
+  Max: 20
+
+Metrics/PerceivedComplexity:
+  Max: 16
+
+Style/Documentation:
+  Enabled: false
+
+Style/GuardClause:
+  Enabled: false
+
+Style/NumericLiterals:
+  Enabled: false
+
+Style/RaiseArgs:
+  Enabled: false
+
+Style/SymbolArray:
+  Enabled: false
+
+Style/WordArray:
+  Enabled: false

@@ -1,2 +1,8 @@
+.bundle
+.idea
 Gemfile.lock
+gemfiles/.bundle/
+gemfiles/*.gemfile.lock
+coverage
+pkg
 *.gem

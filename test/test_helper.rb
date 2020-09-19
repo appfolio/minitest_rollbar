@@ -1,8 +1,26 @@
-$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+# frozen_string_literal: true
+
+require 'bundler'
+
+begin
+  Bundler.setup(:default, :development)
+rescue Bundler::BundlerError => e
+  warn e.message
+  warn 'Run `bundle install` to install missing gems'
+  exit e.status_code
+end
+
+if ENV['WITH_COVERAGE'] == 'true'
+  require 'simplecov'
+  SimpleCov.start do
+    enable_coverage :branch
+    add_filter %r{\A/test}
+  end
+end
 
 require 'minitest_rollbar'
 require 'minitest/autorun'
-require 'minitest/unit'
-require 'mocha/mini_test'
+require 'minitest/reporters'
+require 'mocha/minitest'
 
-
+MiniTest::Reporters.use!
