@@ -1,13 +1,14 @@
-require 'rollbar'
-require 'minitest/reporters'
+# frozen_string_literal: true
+
 module MinitestRollbar
-
   class RollbarReporter < Minitest::Reporters::BaseReporter
-
     attr_accessor :use_default_grouping
 
     def initialize(options = {})
       @rollbar_config = options.delete(:rollbar_config) || {}
+
+      raise StandardError.new('Must set rollbar access token') if @rollbar_config[:access_token].nil?
+
       super(options)
 
       @sequential_exception_count = 0
@@ -17,27 +18,24 @@ module MinitestRollbar
 
       # Rollbar global setting, notifier instance won't report if this is not set
       Rollbar.configuration.enabled = true
-
-      raise 'Must set rollbar access token' if @rollbar_config[:access_token].nil?
     end
 
     def record(result)
       super
       if result.error?
         current_exception = result.failure.exception
-        current_exception_inspect_result = current_exception.inspect
 
         if @previous_exception_inspect_result.nil?
           record_new_error(current_exception)
-        elsif current_exception_inspect_result == @previous_exception_inspect_result
+        elsif current_exception.inspect == @previous_exception_inspect_result
           increment_error_counting
         else # New exception
-          report_error_to_rollbar notifier
+          report_error_to_rollbar(notifier)
           record_new_error current_exception
         end
       else
         unless @previous_exception.nil?
-          report_error_to_rollbar notifier
+          report_error_to_rollbar(notifier)
           reset_error_counting
         end
       end
@@ -45,8 +43,8 @@ module MinitestRollbar
 
     def report
       super
-      if @sequential_exception_count > 0
-        report_error_to_rollbar notifier
+      if @sequential_exception_count.positive?
+        report_error_to_rollbar(notifier)
         reset_error_counting
       end
     end
@@ -54,23 +52,30 @@ module MinitestRollbar
     private
 
     def git_commit_hash
-      ENV['BUILD_VCS_NUMBER']
+      ENV['CIRCLE_SHA1']
     end
 
     def build_config_name
-      ENV['TEAMCITY_BUILDCONF_NAME']
+      ENV['CIRCLE_JOB']
     end
 
     def notifier
-      if @use_default_grouping
-        @notifier = Rollbar.scope({environment: 'PossibleInfraFlaky',count: @sequential_exception_count, commit_hash: git_commit_hash, build_config: build_config_name})
-      else
-        @notifier = Rollbar.scope({environment: 'PossibleInfraFlaky',count: @sequential_exception_count, commit_hash: git_commit_hash, build_config: build_config_name, fingerprint: @previous_exception_inspect_result})
-      end
-      @rollbar_config.each do |key,value|
-        @notifier.configuration.send("#{key}=", value)
-      end
-      @notifier
+      scope.merge!(fingerprint: @previous_exception_inspect_result) unless @use_default_grouping
+
+      rollbar_notifier = Rollbar.scope(scope)
+
+      @rollbar_config.each { |key, value| rollbar_notifier.configuration.send("#{key}=", value) }
+
+      rollbar_notifier
+    end
+
+    def scope
+      @scope ||= {
+        environment: 'PossibleInfraFlaky',
+        count: @sequential_exception_count,
+        commit_hash: git_commit_hash,
+        build_config: build_config_name
+      }
     end
 
     def report_error_to_rollbar(notifier)
